@@ -24,11 +24,11 @@ systems Mash.new
 # if it is possible to detect paravirt vs hardware virt, it should be put in
 # virtualization[:mechanism]
 if File.exists?("/proc/xen/capabilities") && File.read("/proc/xen/capabilities") =~ /control_d/i
-    virtualization[:emulator] = "xen"
+    virtualization[:system] = "xen"
     virtualization[:role] = "host"
     systems[:xen]="host"
 elsif File.exists?("/proc/sys/xen/independent_wallclock")
-  virtualization[:emulator] = "xen"
+  virtualization[:system] = "xen"
   virtualization[:role] = "guest"
   systems[:xen]="guest"
 end
@@ -36,7 +36,7 @@ end
 # Detect KVM hosts by kernel module
 if File.exists?("/proc/modules")
   if File.read("/proc/modules") =~ /^kvm/
-    virtualization[:emulator] = "kvm"
+    virtualization[:system] = "kvm"
     virtualization[:role] = "host"
     systems[:kvm] = "host"
   end
@@ -46,10 +46,10 @@ end
 # We could pick KVM from 'Booting paravirtualized kernel on KVM' in dmesg
 # 2.6.27-9-server (intrepid) has this / 2.6.18-6-amd64 (etch) does not
 # It would be great if we could read pv_info in the kernel
-# Wait for reply to: http://article.gmane.org/gmane.comp.emulators.kvm.devel/27885
+# Wait for reply to: http://article.gmane.org/gmane.comp.systems.kvm.devel/27885
 if File.exists?("/proc/cpuinfo")
   if File.read("/proc/cpuinfo") =~ /QEMU Virtual CPU/
-    virtualization[:emulator] = "kvm"
+    virtualization[:system] = "kvm"
     virtualization[:role] = "guest"
     systems[:kvm] = "guest"
   end
@@ -63,13 +63,13 @@ if File.exists?("/usr/sbin/dmidecode")
     case dmi_info
     when /Manufacturer: Microsoft/
       if dmi_info =~ /Product Name: Virtual Machine/ 
-        virtualization[:emulator] = "virtualpc"
+        virtualization[:system] = "virtualpc"
         virtualization[:role] = "guest"
         systems[:virtualpc] = "guest"
       end 
     when /Manufacturer: VMware/
       if dmi_info =~ /Product Name: VMware Virtual Platform/ 
-        virtualization[:emulator] = "vmware"
+        virtualization[:system] = "vmware"
         virtualization[:role] = "guest"
         systems[:vmware] = "guest"
       end
@@ -86,7 +86,7 @@ if File.exists?("/proc/self/status")
   vxid = proc_self_status.match(/^s_context: (\d+)$/)
   vxid = proc_self_status.match(/^VxID: (\d+)$/) unless vxid
   if vxid and vxid[1]
-    virtualization[:emulator] = "vserver"
+    virtualization[:system] = "vserver"
     if vxid[1] == "0"
       virtualization[:role] = "host"
       systems[:vserver] = "guest"
