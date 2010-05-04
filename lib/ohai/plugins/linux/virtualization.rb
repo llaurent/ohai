@@ -19,18 +19,18 @@
 provides "virtualization"
 
 virtualization Mash.new
-virtualizations Mash.new
+systems Mash.new
 
 # if it is possible to detect paravirt vs hardware virt, it should be put in
 # virtualization[:mechanism]
 if File.exists?("/proc/xen/capabilities") && File.read("/proc/xen/capabilities") =~ /control_d/i
     virtualization[:emulator] = "xen"
     virtualization[:role] = "host"
-    virtualizations[:xen]="host"
+    systems[:xen]="host"
 elsif File.exists?("/proc/sys/xen/independent_wallclock")
   virtualization[:emulator] = "xen"
   virtualization[:role] = "guest"
-  virtualizations[:xen]="guest"
+  systems[:xen]="guest"
 end
 
 # Detect KVM hosts by kernel module
@@ -38,7 +38,7 @@ if File.exists?("/proc/modules")
   if File.read("/proc/modules") =~ /^kvm/
     virtualization[:emulator] = "kvm"
     virtualization[:role] = "host"
-    virtualizations[:kvm] = "host"
+    systems[:kvm] = "host"
   end
 end
 
@@ -51,7 +51,7 @@ if File.exists?("/proc/cpuinfo")
   if File.read("/proc/cpuinfo") =~ /QEMU Virtual CPU/
     virtualization[:emulator] = "kvm"
     virtualization[:role] = "guest"
-    virtualizations[:kvm] = "guest"
+    systems[:kvm] = "guest"
   end
 end
 
@@ -65,13 +65,13 @@ if File.exists?("/usr/sbin/dmidecode")
       if dmi_info =~ /Product Name: Virtual Machine/ 
         virtualization[:emulator] = "virtualpc"
         virtualization[:role] = "guest"
-        virtualizations[:virtualpc] = "guest"
+        systems[:virtualpc] = "guest"
       end 
     when /Manufacturer: VMware/
       if dmi_info =~ /Product Name: VMware Virtual Platform/ 
         virtualization[:emulator] = "vmware"
         virtualization[:role] = "guest"
-        virtualizations[:vmware] = "guest"
+        systems[:vmware] = "guest"
       end
     else
       nil
@@ -89,10 +89,10 @@ if File.exists?("/proc/self/status")
     virtualization[:emulator] = "vserver"
     if vxid[1] == "0"
       virtualization[:role] = "host"
-      virtualizations[:vserver] = "guest"
+      systems[:vserver] = "guest"
     else
       virtualization[:role] = "guest"
-      virtualizations[:vserver] = "guest"
+      systems[:vserver] = "guest"
     end
   end
 end
@@ -102,5 +102,5 @@ end
 
 
 
-virtualization[:emulators] = virtualizations unless virtualizations.empty?
+virtualization[:systems] = systems unless systems.empty?
 

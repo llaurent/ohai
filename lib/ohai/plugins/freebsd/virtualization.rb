@@ -19,6 +19,7 @@
 provides "virtualization"
 
 virtualization Mash.new
+systems Mash.new
 
 # KVM Host support for FreeBSD is in development
 # http://feanor.sssup.it/~fabio/freebsd/lkvm/
@@ -28,6 +29,7 @@ virtualization Mash.new
 if from("sysctl -n hw.model") =~ /QEMU Virtual CPU/
   virtualization[:system] = "kvm"
   virtualization[:role] = "guest"
+  systems[:kvm] = "guest"
 end
 
 # http://www.dmo.ca/blog/detecting-virtualization-on-linux
@@ -46,11 +48,13 @@ if File.exists?("/usr/local/sbin/dmidecode")
         if found_virt_manufacturer == "microsoft" && found_virt_product == "microsoft"
           virtualization[:system] = "virtualpc"
           virtualization[:role] = "guest"
+          systems[:virtualpc] = "guest"
         end
       when /Version: VS2005R2/
         if found_virt_manufacturer == "microsoft" && found_virt_product == "microsoft"
           virtualization[:system] = "virtualserver"
           virtualization[:role] = "guest"
+          systems[:virtualserver] = "guest"
         end
       when /Manufacturer: VMware/
         found_virt_manufacturer = "vmware"
@@ -58,9 +62,12 @@ if File.exists?("/usr/local/sbin/dmidecode")
         if found_virt_manufacturer == "vmware" 
           virtualization[:system] = "vmware"
           virtualization[:role] = "guest"
+          systems[:vmware] = "guest"
         end
       end
     end
   end
 end
+
+virtualization[:systems] = systems unless systems.empty?
 
