@@ -19,7 +19,7 @@
 provides "virtualization"
 
 virtualization Mash.new
-systems Mash.new
+systems = Mash.new
 
 # if it is possible to detect paravirt vs hardware virt, it should be put in
 # virtualization[:mechanism]

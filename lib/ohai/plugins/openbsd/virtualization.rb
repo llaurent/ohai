@@ -19,7 +19,7 @@
 provides "virtualization"
 
 virtualization Mash.new
-systems Mash.new
+systems = Mash.new
 
 # KVM Host support for FreeBSD is in development
 # http://feanor.sssup.it/~fabio/freebsd/lkvm/
