@@ -89,7 +89,7 @@ if File.exists?("/proc/self/status")
     virtualization[:system] = "vserver"
     if vxid[1] == "0"
       virtualization[:role] = "host"
-      systems[:vserver] = "guest"
+      systems[:vserver] = "host"
     else
       virtualization[:role] = "guest"
       systems[:vserver] = "guest"
