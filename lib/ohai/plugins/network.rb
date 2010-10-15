@@ -41,12 +41,15 @@ unless network[:default_interface].nil?
   ipaddress im.shift
   macaddress im.shift
 else
+  require "socket"
+  ipaddress Socket::gethostbyname(fqdn)[3].unpack("CCCC").join('.')
   network["interfaces"].keys.sort.each do |iface|
     if network["interfaces"][iface]["encapsulation"].eql?("Ethernet")
       im = find_ip_and_mac(network["interfaces"][iface]["addresses"])
-      ipaddress im.shift
-      macaddress im.shift
-      return if (ipaddress and macaddress)
+      if im[0] == ipaddress
+        macaddress im[1]
+        return
+      end
     end
   end
 end
