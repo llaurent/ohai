@@ -18,7 +18,11 @@
 
 provides "network", "counters/network"
 
-network[:default_interface] = from("route -n \| grep -m 1 ^0.0.0.0 \| awk \'{print \$8\}\'")
+network[:default_interface] = nil
+begin
+  default_interface = File.read("/proc/net/route").match(/^([^\s]+)\s+00000000\s+/)[1]
+  network[:default_interface] = default_interface if File.read("/proc/net/dev").scan(/^\s*([^\s]+):/).flatten.include? default_interface
+end
 
 def encaps_lookup(encap)
   return "Loopback" if encap.eql?("Local Loopback")

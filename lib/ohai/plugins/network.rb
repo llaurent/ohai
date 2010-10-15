@@ -36,17 +36,19 @@ def find_ip_and_mac(addresses)
   [ip, mac]
 end
 
-unless network[:default_interface].nil?
+if network[:default_interface].nil?
+  require "socket"
+  ipaddress Socket::gethostbyname(fqdn)[3].unpack("CCCC").join('.')
+  network["interfaces"].keys.sort.each do |iface|
+    im = find_ip_and_mac(network["interfaces"][iface]["addresses"])
+    if im[0] == ipaddress
+      macaddress im[1]
+      network[:default_interface] = iface
+      return
+    end
+  end
+else
   im = find_ip_and_mac(network["interfaces"][network[:default_interface]]["addresses"])
   ipaddress im.shift
   macaddress im.shift
-else
-  network["interfaces"].keys.sort.each do |iface|
-    if network["interfaces"][iface]["encapsulation"].eql?("Ethernet")
-      im = find_ip_and_mac(network["interfaces"][iface]["addresses"])
-      ipaddress im.shift
-      macaddress im.shift
-      return if (ipaddress and macaddress)
-    end
-  end
 end
