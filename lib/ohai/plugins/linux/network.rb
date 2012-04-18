@@ -218,8 +218,7 @@ if File.exist?("/sbin/ip")
             (IPAddr.new(tmp_route_cidr).include? network[:default_gateway])
           ipaddress tmp_source_addr
           macaddress iface[tmp_int][:addresses].select{|k,v| v["family"]=="lladdr"}.first.first
-          ip6address iface[tmp_int][:addresses].reject{|address, hash| hash['family'] != "inet6" || hash['scope'] != 'Global'}.first.first
-        end
+       end
       end
     end
   end
