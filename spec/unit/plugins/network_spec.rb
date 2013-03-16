@@ -23,8 +23,8 @@ def it_does_not_fail
     Ohai::Log.should_receive(:warn).any_number_of_times
     Ohai::Log.should_not_receive(:debug).with(/^Plugin network threw exception/)
     @ohai._require_plugin("network")
-    %w[ ipaddress, macaddress, ip6address ].each do |attribute|
-      @ohai.should have_key(attribute)
+    %w[ ipaddress macaddress ip6address ].each do |attribute|
+      @ohai.data.should have_key(attribute)
     end
   end
 end

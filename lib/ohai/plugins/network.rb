@@ -42,6 +42,7 @@ def sorted_ips(family = "inet")
   ipaddresses = []
   # ipaddresses going to hold #{family} ipaddresses and their scope
   Mash[network['interfaces']].each do |iface, iface_v|
+    next if iface_v.nil? or iface_v['addresses'].nil?
     iface_v['addresses'].each do |addr, addr_v|
       next if addr_v.nil? or not addr_v.has_key? "family" or addr_v['family'] != family
       ipaddresses <<  {
@@ -149,6 +150,7 @@ FAMILIES.keys.sort.each do |family|
       # i don't issue this warning if r["ip"] exists and r["mac"].nil?
       # as it could be a valid setup with a NOARP default_interface
       Ohai::Log.warn("unable to detect macaddress")
+      ipaddress nil
     else
       ipaddress r["ip"]
       macaddress r["mac"]
@@ -156,6 +158,7 @@ FAMILIES.keys.sort.each do |family|
   elsif family == "inet6" and ip6address.nil?
     if r["ip"].nil?
       Ohai::Log.warn("unable to detect ip6address")
+      ip6address nil
     else
       ip6address r["ip"]
       if r["mac"] and macaddress.nil? and ipaddress.nil?
@@ -166,6 +169,8 @@ FAMILIES.keys.sort.each do |family|
   end
   results[family] = r
 end
+
+macaddress nil unless macaddress
 
 if results["inet"]["iface"] and results["inet6"]["iface"] and
     results["inet"]["iface"] != results["inet6"]["iface"]
