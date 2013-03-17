@@ -26,27 +26,20 @@ rescue LoadError => e
 end
 
 def prepare_data
-  @ifconfig_lines = @linux_ifconfig.split("\n")
   @route_lines = @linux_route_n.split("\n")
-  @arp_lines = @linux_arp_an.split("\n")
-  @ipaddr_lines = @linux_ip_addr.split("\n")
-  @iplink_lines = @linux_ip_link_s_d.split("\n")
-  @ipneighbor_lines = @linux_ip_neighbor_show.split("\n")
-  @ipneighbor_lines_inet6 = @linux_ip_inet6_neighbor_show.split("\n")
-  @ip_route_lines = @linux_ip_route.split("\n")
-  @ip_route_inet6_lines = @linux_ip_route_inet6.split("\n")
 end
 
 def do_stubs
   @ohai.stub!(:from).with("route -n \| grep -m 1 ^0.0.0.0").and_return(@route_lines.last)
-  @ohai.stub!(:popen4).with("ifconfig -a").and_yield(nil, @stdin_ifconfig, @ifconfig_lines, nil)
-  @ohai.stub!(:popen4).with("arp -an").and_yield(nil, @stdin_arp, @arp_lines, nil)
-  @ohai.stub!(:popen4).with("ip -f inet neigh show").and_yield(nil, @stdin_ipneighbor, @ipneighbor_lines, nil)
-  @ohai.stub!(:popen4).with("ip -f inet6 neigh show").and_yield(nil, @stdin_ipneighbor_inet6, @ipneighbor_lines_inet6, nil)
-  @ohai.stub!(:popen4).with("ip addr").and_yield(nil, @stdin_ipaddr, @ipaddr_lines, nil)
-  @ohai.stub!(:popen4).with("ip -d -s link").and_yield(nil, @stdin_iplink, @iplink_lines, nil)
-  @ohai.stub!(:popen4).with("ip -f inet route show").and_yield(nil, @stdin_ip_route, @ip_route_lines, nil)
-  @ohai.stub!(:popen4).with("ip -f inet6 route show").and_yield(nil, @stdin_ip_route_inet6, @ip_route_inet6_lines, nil)
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ifconfig -a"}).and_return([nil, @linux_ifconfig, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"arp -an"}).and_return([nil, @linux_arp_an, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet neigh show"}).and_return([nil, @linux_ip_neighbor_show, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 neigh show"}).and_return([nil, @linux_ip_inet6_neighbor_show, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip addr"}).and_return([nil, @linux_ip_addr, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -d -s link"}).and_return([nil, @linux_ip_link_s_d, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -s link"}).and_return([nil, @linux_ip_link_s_d, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet route show"}).and_return([nil, @linux_ip_route, nil])
+  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 route show"}).and_return([nil, @linux_ip_route_inet6, nil])
 end
 
 describe Ohai::System, "Linux Network Plugin" do
@@ -266,22 +259,13 @@ fe80::/64 dev eth0.11  proto kernel  metric 256
 default via 1111:2222:3333:4444::1 dev eth0.11  metric 1024
 IP_ROUTE_SCOPE
 
-    @stdin_ifconfig = StringIO.new
-    @stdin_arp = StringIO.new
-    @stdin_ipaddr = StringIO.new
-    @stdin_iplink = StringIO.new
-    @stdin_ipneighbor = StringIO.new
-    @stdin_ipneighbor_inet6 = StringIO.new
-    @stdin_ip_route = StringIO.new
-    @stdin_ip_route_inet6 = StringIO.new
-
     prepare_data
     
     @ohai = Ohai::System.new
     @ohai.stub!(:require_plugin).and_return(true)
 
-    @ohai.stub(:popen4).with("ifconfig -a")
-    @ohai.stub(:popen4).with("arp -an")
+    @ohai.stub(:run_command).with({:no_status_check=>true, :command=>"ifconfig -a"})
+    @ohai.stub(:run_command).with({:no_status_check=>true, :command=>"arp -an"})
     
     Ohai::Log.should_receive(:warn).with(/unable to detect/).exactly(3).times
     @ohai._require_plugin("network")
