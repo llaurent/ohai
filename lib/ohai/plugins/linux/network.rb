@@ -38,6 +38,11 @@ net_counters = Mash.new
 # The '@eth0:' portion doesn't exist on primary interfaces and thus is optional in the regex
 IPROUTE_INT_REGEX = /^(\d+): ([0-9a-zA-Z@:\.\-_]*?)(@[0-9a-zA-Z]+|):\s/
 
+# this plugin supposes ip, ifconfig, route, arp are in the PATH
+SBIN_PATHS = [ "/usr/local/sbin", "/usr/sbin", "/sbin" ]
+OLD_PATH = ENV["PATH"]
+ENV["PATH"] = ( ENV["PATH"].split(/:/) | SBIN_PATHS ).join(":")
+
 # trying to run ip addr
 # if it fails with Ohai::Exceptions::Exec then failing back to ifconfig/route/arp
 begin
@@ -406,3 +411,5 @@ counters[:network][:interfaces] = net_counters
 
 network["interfaces"] = iface
 
+# restoring old path. if plugin fails it wont be restored tho
+ENV["PATH"] = OLD_PATH
