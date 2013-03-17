@@ -38,7 +38,15 @@ net_counters = Mash.new
 # The '@eth0:' portion doesn't exist on primary interfaces and thus is optional in the regex
 IPROUTE_INT_REGEX = /^(\d+): ([0-9a-zA-Z@:\.\-_]*?)(@[0-9a-zA-Z]+|):\s/
 
-if File.exist?("/sbin/ip")
+# trying to run ip addr
+# if it fails with Ohai::Exceptions::Exec then failing back to ifconfig/route/arp
+begin
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "ip addr")
+rescue Ohai::Exceptions::Exec
+  status = -1
+end
+
+if status == 0
 
   # families to get default routes from
   families = [
@@ -56,7 +64,6 @@ if File.exist?("/sbin/ip")
               }
              ]
 
-  status, stdout, stderr = run_command(:no_status_check => true, :command => "ip addr")
   cint = nil
   stdout.split(/\n/).each do |line|
     if line =~ IPROUTE_INT_REGEX

@@ -27,21 +27,26 @@ end
 
 def prepare_data
   @route_lines = @linux_route_n.split("\n")
+  @linux_ip_addr_status = 0
   @ip_link_s_d_status = 0
   @ip_link_s_d_stderr = ""
 end
 
 def do_stubs
-  @ohai.stub!(:from).with("route -n \| grep -m 1 ^0.0.0.0").and_return(@route_lines.last)
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ifconfig -a"}).and_return([0, @linux_ifconfig, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"arp -an"}).and_return([0, @linux_arp_an, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet neigh show"}).and_return([0, @linux_ip_neighbor_show, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 neigh show"}).and_return([0, @linux_ip_inet6_neighbor_show, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip addr"}).and_return([0, @linux_ip_addr, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -d -s link"}).and_return([@ip_link_s_d_status, @linux_ip_link_s_d, @ip_link_s_d_stderr = ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -s link"}).and_return([0, @linux_ip_link_s, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet route show"}).and_return([0, @linux_ip_route, ""])
-  @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 route show"}).and_return([0, @linux_ip_route_inet6, ""])
+  if @linux_ip_addr_status == 0
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip addr"}).and_return([@linux_ip_addr_status, @linux_ip_addr, ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -d -s link"}).and_return([@ip_link_s_d_status, @linux_ip_link_s_d, @ip_link_s_d_stderr = ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -s link"}).and_return([0, @linux_ip_link_s, ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet route show"}).and_return([0, @linux_ip_route, ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 route show"}).and_return([0, @linux_ip_route_inet6, ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet neigh show"}).and_return([0, @linux_ip_neighbor_show, ""])
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip -f inet6 neigh show"}).and_return([0, @linux_ip_inet6_neighbor_show, ""])
+  else
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ip addr"}).and_raise(Ohai::Exceptions::Exec)
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"ifconfig -a"}).and_return([0, @linux_ifconfig, ""])
+    @ohai.stub!(:from).with("route -n \| grep -m 1 ^0.0.0.0").and_return(@route_lines.last)
+    @ohai.stub!(:run_command).with({:no_status_check=>true, :command=>"arp -an"}).and_return([0, @linux_arp_an, ""])
+  end
 end
 
 describe Ohai::System, "Linux Network Plugin" do
@@ -312,7 +317,7 @@ IP_ROUTE_SCOPE
 
     describe "gathering IP layer address info via #{network_method}" do
       before do
-        File.stub!(:exist?).with("/sbin/ip").and_return( network_method == "iproute2" )
+        @linux_ip_addr_status = network_method == "iproute2" ? 0 : -1
         do_stubs
       end
 
