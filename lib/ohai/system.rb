@@ -89,8 +89,7 @@ module Ohai
       regex_list.flatten.each do |regex|
         status, stdout, stderr = run_command(:command => cmd)
         return "" if stdout.nil? || stdout.empty?
-        stdout.chomp!.strip
-        md = stdout.match(regex)
+        md = stdout.strip.match(regex)
         return md[1]
       end
     end
