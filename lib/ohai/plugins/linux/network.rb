@@ -56,10 +56,9 @@ if File.exist?("/sbin/ip")
               }
              ]
 
-  popen4("ip addr") do |pid, stdin, stdout, stderr|
-    stdin.close
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "ip addr")
     cint = nil
-    stdout.each do |line|
+    stdout.split(/\n/).each do |line|
       if line =~ IPROUTE_INT_REGEX
         cint = $2
         iface[cint] = Mash.new
@@ -123,13 +122,13 @@ if File.exist?("/sbin/ip")
         iface[cint][:addresses][tmp_addr] = { "family" => "inet6", "prefixlen" => $2, "scope" => ($3.eql?("host") ? "Node" : $3.capitalize) }
       end
     end
-  end
 
-  popen4("ip -d -s link") do |pid, stdin, stdout, stderr|
-    stdin.close
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "ip -d -s link")
+  # failback for old iproute versions (not having the -d option)
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "ip -s link") if status != 0
     tmp_int = nil
     on_rx = true
-    stdout.each do |line|
+    stdout.split(/\n/).each do |line|
       if line =~ IPROUTE_INT_REGEX
         tmp_int = $2
         net_counters[tmp_int] = Mash.new unless net_counters[tmp_int]
@@ -171,18 +170,14 @@ if File.exist?("/sbin/ip")
       if line =~ /state (\w+)/
         iface[tmp_int]['state'] = $1.downcase
       end
-
-
     end
-  end
 
   families.each do |family|
     neigh_attr = family[:neighbour_attribute]
     default_prefix = family[:default_prefix]
 
-    popen4("ip -f #{family[:name]} neigh show") do |pid, stdin, stdout, stderr|
-      stdin.close
-      stdout.each do |line|
+    status, stdout, stderr = run_command(:no_status_check => true, :command => "ip -f #{family[:name]} neigh show")
+      stdout.split(/\n/).each do |line|
         if line =~ /^([a-f0-9\:\.]+)\s+dev\s+([^\s]+)\s+lladdr\s+([a-fA-F0-9\:]+)/
           unless iface[$2]
             Ohai::Log.warn("neighbour list has entries for unknown interface #{iface[$2]}")
@@ -192,7 +187,6 @@ if File.exist?("/sbin/ip")
           iface[$2][neigh_attr][$1] = $3.downcase
         end
       end
-    end
 
     # checking the routing tables
     # why ?
@@ -201,9 +195,8 @@ if File.exist?("/sbin/ip")
     #    the routing table source field.
     # 3) and since we're at it, let's populate some :routes attributes
     # (going to do that for both inet and inet6 addresses)
-    popen4("ip -f #{family[:name]} route show") do |pid, stdin, stdout, stderr|
-      stdin.close
-      stdout.each do |line|
+    status, stdout, stderr = run_command(:no_status_check => true, :command => "ip -f #{family[:name]} route show")
+      stdout.split(/\n/).each do |line|
         if line =~ /^([^\s]+)\s(.*)$/
           route_dest = $1
           route_ending = $2
@@ -234,7 +227,7 @@ if File.exist?("/sbin/ip")
           iface[route_int][:routes] << route_entry
         end
       end
-    end
+
     # now looking at the routes to set the default attributes
     # for information, default routes can be of this form :
     # - default via 10.0.2.4 dev br0
@@ -322,10 +315,9 @@ else
     Ohai::Log.debug("Unable to determine default interface")
   end
 
-  popen4("ifconfig -a") do |pid, stdin, stdout, stderr|
-    stdin.close
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "ifconfig -a")
     cint = nil
-    stdout.each do |line|
+    stdout.split(/\n/).each do |line|
       tmp_addr = nil
       # dev_valid_name in the kernel only excludes slashes, nulls, spaces 
       # http://git.kernel.org/?p=linux/kernel/git/stable/linux-stable.git;a=blob;f=net/core/dev.c#l851
@@ -389,19 +381,16 @@ else
         net_counters[cint][:tx]["bytes"] = $1
       end
     end
-  end
 
 
-  popen4("arp -an") do |pid, stdin, stdout, stderr|
-    stdin.close
-    stdout.each do |line|
+  status, stdout, stderr = run_command(:no_status_check => true, :command => "arp -an")
+    stdout.split(/\n/).each do |line|
       if line =~ /^\S+ \((\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\) at ([a-fA-F0-9\:]+) \[(\w+)\] on ([0-9a-zA-Z\.\:\-]+)/
         next unless iface[$4] # this should never happen
         iface[$4][:arp] = Mash.new unless iface[$4][:arp]
         iface[$4][:arp][$1] = $2.downcase
       end
     end
-  end
 
 end
 
